@@ -1,1 +1,1 @@
-# Fomes
+# Ganoderma
