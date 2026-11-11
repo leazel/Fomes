@@ -3,23 +3,549 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Visualizador 3D - Fomes</title>
+  <title>Ganoderma orbiforme | Micodex FunGO</title>
+
   <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sniglet:wght@800&family=Figtree:ital,wght@0,400;0,500;0,700;1,500;1,700&family=DM+Mono:wght@400;500&display=swap">
+
   <style>
-    body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #eeeeee; overflow: hidden; }
-    model-viewer { width: 100%; height: 100%; }
+    :root {
+      --tela: #101512;          /* fundo escuro do topo e do balão */
+      --papel: #f3f5f1;         /* fundo claro da parte de baixo */
+      --texto: #18201b;
+      --suave: #55645a;         /* rótulos pequenos */
+      --linha: #c5cfc7;
+      --dourado: #d9c437;       /* destaque sobre fundo escuro */
+      --dourado-escuro: #8a7a0b;/* títulos sobre fundo claro */
+      --display: 'Sniglet', system-ui, sans-serif;
+      --corpo: 'Figtree', system-ui, sans-serif;
+      --mono: 'DM Mono', ui-monospace, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: var(--corpo);
+      background: var(--papel);
+      color: var(--texto);
+    }
+
+    .pagina {
+      max-width: 520px;
+      margin: 0 auto;
+      background: var(--papel);
+    }
+
+    /* ---------- Topo: modelo 3D centralizado ---------- */
+    .topo {
+      background: var(--tela);
+      border-radius: 0 0 50% 50% / 0 0 56px 56px;
+      padding: 18px 20px 64px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .barra-topo {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .marca {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: 24px;
+      line-height: 1;
+      color: var(--dourado);
+    }
+
+    .lente {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 3px solid #f3f6f2;
+      background: radial-gradient(circle at 35% 30%, #c9ecff 0%, #38a2dc 45%, #0d4f78 100%);
+      position: relative;
+    }
+
+    .lente::after {
+      content: "";
+      position: absolute;
+      left: 4px;
+      top: 4px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .85);
+    }
+
+    .codigo {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: #a9b8ad;
+    }
+
+    .palco {
+      position: relative;
+      width: 76%;
+      max-width: 300px;
+      aspect-ratio: 1 / 1;
+      border-radius: 50%;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 46%, #2b3d31 0%, #16211a 58%, #0c110e 100%);
+      box-shadow: 0 0 0 2px rgba(217, 196, 55, .55);
+    }
+
+    model-viewer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      --poster-color: transparent;
+    }
+
+    .botao-ar {
+      position: absolute;
+      left: 50%;
+      bottom: 9%;
+      transform: translateX(-50%);
+      min-height: 40px;
+      padding: 8px 16px;
+      border: 0;
+      border-radius: 999px;
+      background: var(--dourado);
+      color: var(--tela);
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 1px;
+      cursor: pointer;
+    }
+
+    .botao-ar:focus-visible {
+      outline: 3px solid #ffffff;
+      outline-offset: 2px;
+    }
+
+    .dica {
+      margin: -4px 0 0;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 1px;
+      color: #a9b8ad;
+      text-align: center;
+    }
+
+    .nome {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      text-align: center;
+    }
+
+    .nome .rotulo {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: #a9b8ad;
+    }
+
+    .nome h1 {
+      margin: 0;
+      font-style: italic;
+      font-weight: 700;
+      font-size: 28px;
+      line-height: 1.1;
+      color: #f1f5ee;
+      text-wrap: balance;
+    }
+
+    /* ---------- Duas colunas: Tipo | Sobre ---------- */
+    .colunas {
+      display: flex;
+      align-items: stretch;
+      gap: 16px;
+      padding: 28px 18px 24px;
+    }
+
+    .coluna-tipo {
+      flex: 1 1 0;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .coluna-sobre {
+      flex: 1.15 1 0;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .divisor {
+      flex: 0 0 3px;
+      width: 3px;
+      border-radius: 2px;
+      background: var(--tela);
+    }
+
+    h2 {
+      margin: 0;
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: 32px;
+      line-height: 1;
+      color: var(--dourado-escuro);
+    }
+
+    /* Cadeia taxonômica */
+    .cadeia {
+      position: relative;
+      margin: 0;
+      padding: 0 0 0 24px;
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .cadeia::before {
+      content: "";
+      position: absolute;
+      left: 5px;
+      top: 10px;
+      bottom: 10px;
+      width: 2px;
+      background: #b9c4bb;
+    }
+
+    .cadeia li {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .cadeia li::before {
+      content: "";
+      position: absolute;
+      left: -24px;
+      top: 4px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 2px solid var(--papel);
+      background: #6f8a77;
+    }
+
+    .cadeia .nivel {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      color: var(--suave);
+    }
+
+    .cadeia .taxon {
+      font-size: 17px;
+      font-weight: 500;
+      overflow-wrap: anywhere;
+    }
+
+    .cadeia .taxon.it {
+      font-style: italic;
+    }
+
+    .cadeia li.especie::before {
+      left: -25px;
+      top: 3px;
+      width: 14px;
+      height: 14px;
+      background: #a8780f;
+      box-shadow: 0 0 0 2px #a8780f;
+    }
+
+    .cadeia li.especie .nivel {
+      color: #7a5a0a;
+    }
+
+    .cadeia li.especie .taxon {
+      font-size: 19px;
+      font-weight: 700;
+      font-style: italic;
+      line-height: 1.2;
+    }
+
+    /* Personagem com balão de fala */
+    .guia {
+      margin-top: auto;
+      padding-top: 14px;
+    }
+
+    .balao {
+      position: relative;
+      margin-bottom: 12px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: var(--tela);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .balao::after {
+      content: "";
+      position: absolute;
+      left: 34px;
+      bottom: -7px;
+      width: 14px;
+      height: 14px;
+      background: var(--tela);
+      transform: rotate(45deg);
+    }
+
+    .balao strong {
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: 17px;
+      line-height: 1.15;
+      color: var(--dourado);
+    }
+
+    .balao span {
+      font-size: 14px;
+      line-height: 1.45;
+      color: #e9eee6;
+    }
+
+    .guia img {
+      display: block;
+      width: 80%;
+      max-width: 130px;
+      height: auto;
+    }
+
+    /* Sobre */
+    .descricao {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .foto {
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .foto img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+      border-radius: 10px;
+      border: 1px solid var(--linha);
+      background: #dfe5dc;
+    }
+
+    .foto figcaption {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      color: var(--suave);
+    }
+
+    .ficha {
+      margin: 0;
+      border-top: 1px solid var(--linha);
+    }
+
+    .ficha div {
+      padding: 10px 0;
+      border-bottom: 1px solid var(--linha);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .ficha dt {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      color: var(--suave);
+    }
+
+    .ficha dd {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    .rodape {
+      padding: 0 18px calc(22px + env(safe-area-inset-bottom, 0px));
+      text-align: center;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      line-height: 1.7;
+      color: var(--suave);
+    }
+
+    @media (max-width: 340px) {
+      .colunas {
+        gap: 10px;
+        padding-left: 12px;
+        padding-right: 12px;
+      }
+      .descricao {
+        font-size: 14px;
+      }
+      .nome h1 {
+        font-size: 24px;
+      }
+    }
   </style>
 </head>
+
 <body>
+  <div class="pagina">
 
-  <model-viewer 
-    src="ganoderma.glb" 
-    ar 
-    ar-modes="webxr scene-viewer quick-look" 
-    camera-controls 
-    auto-rotate 
-    shadow-intensity="1">
-  </model-viewer>
+    <!-- TOPO: modelo 3D centralizado -->
+    <header class="topo">
+      <div class="barra-topo">
+        <div class="marca"><span class="lente" aria-hidden="true"></span>FunGO</div>
+        <div class="codigo">MICODEX · Nº 001</div>
+      </div>
 
+      <div class="palco">
+        <model-viewer
+          src="ganoderma_sp.glb"
+          poster="Treinadora.png"
+          ar
+          ar-modes="webxr scene-viewer quick-look"
+          camera-controls
+          auto-rotate
+          shadow-intensity="1"
+          alt="Modelo tridimensional de Ganoderma orbiforme">
+          <button slot="ar-button" class="botao-ar" type="button">Ver em AR</button>
+        </model-viewer>
+      </div>
+
+      <p class="dica">Arraste para girar · aproxime para ver os detalhes</p>
+
+      <div class="nome">
+        <div class="rotulo">ESPÉCIE</div>
+        <h1>Ganoderma orbiforme</h1>
+      </div>
+    </header>
+
+    <main>
+      <div class="colunas">
+
+        <!-- TIPO -->
+        <section class="coluna-tipo" aria-labelledby="titulo-tipo">
+          <h2 id="titulo-tipo">Tipo</h2>
+
+          <ol class="cadeia">
+            <li>
+              <span class="nivel">ORDEM</span>
+              <span class="taxon">Polyporales</span>
+            </li>
+            <li>
+              <span class="nivel">FAMÍLIA</span>
+              <span class="taxon">Polyporaceae</span>
+            </li>
+            <li>
+              <span class="nivel">GÊNERO</span>
+              <span class="taxon it">Ganoderma</span>
+            </li>
+            <li class="especie">
+              <span class="nivel">ESPÉCIE</span>
+              <span class="taxon">Ganoderma orbiforme</span>
+            </li>
+          </ol>
+
+          <div class="guia">
+            <div class="balao">
+              <strong>Fungo registrado!</strong>
+              <span>Escaneie outro QR code para continuar a exploração</span>
+            </div>
+            <img
+              src="guia.png"
+              alt="Exploradora sorrindo, com mochila e camisa de cogumelos, segurando uma pokébola e apontando para a ficha">
+          </div>
+        </section>
+
+        <div class="divisor" aria-hidden="true"></div>
+
+        <!-- SOBRE -->
+        <section class="coluna-sobre" aria-labelledby="titulo-sobre">
+          <h2 id="titulo-sobre">Sobre</h2>
+
+          <p class="descricao">
+            O gênero <i>Ganoderma</i> compreende fungos poroides
+            pertencentes à família Polyporaceae (Basidiomycota).
+            Seus representantes apresentam basidiomas geralmente
+            resistentes, com consistência coriácea a lenhosa,
+            sendo frequentemente encontrados associados à madeira,
+            onde desempenham importante papel na decomposição
+            da matéria orgânica.
+          </p>
+
+          <dl class="ficha">
+            <div>
+              <dt>HABITAT</dt>
+              <dd>Madeira</dd>
+            </div>
+            <div>
+              <dt>TEXTURA</dt>
+              <dd>Coriácea a lenhosa</dd>
+            </div>
+            <div>
+              <dt>FUNÇÃO</dt>
+              <dd>Decompõe matéria orgânica</dd>
+            </div>
+          </dl>
+
+          <figure class="foto">
+            <img src="Ganoderma.jpg" alt="Basidioma de Ganoderma">
+            <figcaption>BASIDIOMA DE GANODERMA</figcaption>
+          </figure>
+        </section>
+
+      </div>
+    </main>
+
+    <footer class="rodape">
+      FunGO · APRENDA MICOLOGIA EXPLORANDO<br>
+      Modelo tridimensional para fins de divulgação científica.
+    </footer>
+
+  </div>
+
+  <script>
+    // Respeita quem pede menos movimento: desliga a rotação automática.
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.querySelector('model-viewer').removeAttribute('auto-rotate');
+    }
+  </script>
 </body>
 </html>
