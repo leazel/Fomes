@@ -179,13 +179,14 @@
       position: absolute;
       inset: 0;
       margin: 0;
-      padding: 18%;
+      padding: 14%;
       display: flex;
       align-items: center;
       justify-content: center;
       text-align: center;
       font-size: 12px;
       line-height: 1.4;
+      overflow-wrap: anywhere;
       color: #e9eee6;
       background: rgba(16, 21, 18, .92);
     }
@@ -511,9 +512,10 @@
           <button slot="ar-button" class="botao-ar" type="button">Ver em AR</button>
         </model-viewer>
         <p class="erro-modelo" role="alert" hidden>
-          Não foi possível carregar o modelo 3D. Confira se o arquivo
-          ganoderma_1.glb está na mesma pasta do index.html e se a página
-          foi aberta por um endereço http(s), não direto do arquivo.
+          <span class="erro-corpo">
+            Não foi possível carregar o modelo 3D.<br>
+            <code class="erro-detalhe"></code>
+          </span>
         </p>
       </div>
 
@@ -623,17 +625,42 @@
       modelo.removeAttribute('auto-rotate');
     }
 
-    // Barra de progresso: o arquivo .glb tem cerca de 24 MB.
+    // Barra de progresso enquanto o arquivo .glb carrega.
     modelo.addEventListener('progress', function (e) {
       var p = e.detail.totalProgress;
       barra.style.width = (p * 100) + '%';
       if (p >= 1) carregando.classList.add('oculto');
     });
 
-    // Se o arquivo não for encontrado ou não abrir, mostra o aviso no círculo.
-    modelo.addEventListener('error', function () {
+    // Se o modelo não abrir, mostra o aviso no círculo com o motivo técnico.
+    modelo.addEventListener('error', function (e) {
       carregando.classList.add('oculto');
       erro.hidden = false;
+
+      var detalhe = erro.querySelector('.erro-detalhe');
+      var info = e.detail || {};
+      var motivo = (info.sourceError && info.sourceError.message) || info.type || 'sem detalhe';
+      detalhe.textContent = motivo;
+      console.error('model-viewer:', info);
+
+      // Diagnóstico do arquivo: status do servidor, início do arquivo e tamanho.
+      fetch(modelo.getAttribute('src')).then(function (r) {
+        var status = 'HTTP ' + r.status;
+        var servidor = r.headers.get('content-length') || '?';
+        return r.body.getReader().read().then(function (parte) {
+          var b = parte.value || new Uint8Array();
+          var inicio = String.fromCharCode.apply(null, Array.prototype.slice.call(b.subarray(0, 4)));
+          var declarado = '?';
+          if (b.length >= 12) {
+            declarado = new DataView(b.buffer, b.byteOffset, b.byteLength).getUint32(8, true);
+          }
+          detalhe.textContent += ' | ' + status + ' | início: ' + inicio +
+            ' | declarado: ' + declarado + ' | servidor: ' + servidor;
+          r.body.cancel();
+        });
+      }).catch(function (err) {
+        detalhe.textContent += ' | fetch: ' + err.message;
+      });
     });
   </script>
 </body>
