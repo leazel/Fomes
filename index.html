@@ -142,6 +142,58 @@
       outline-offset: 2px;
     }
 
+    .carregando {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 58%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      color: var(--dourado);
+      transition: opacity .3s;
+    }
+
+    .carregando.oculto {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .carregando-trilho {
+      margin-top: 8px;
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, .15);
+      overflow: hidden;
+    }
+
+    .carregando-barra {
+      width: 0;
+      height: 100%;
+      background: var(--dourado);
+    }
+
+    .erro-modelo {
+      position: absolute;
+      inset: 0;
+      margin: 0;
+      padding: 18%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-size: 12px;
+      line-height: 1.4;
+      color: #e9eee6;
+      background: rgba(16, 21, 18, .92);
+    }
+
+    .erro-modelo[hidden] {
+      display: none;
+    }
+
     .dica {
       margin: -4px 0 0;
       font-family: var(--mono);
@@ -347,6 +399,10 @@
       margin: 0;
       font-size: 15px;
       line-height: 1.6;
+      text-align: justify;
+      text-justify: inter-word;
+      hyphens: auto;
+      -webkit-hyphens: auto;
     }
 
     .foto {
@@ -437,16 +493,28 @@
 
       <div class="palco">
         <model-viewer
-          src="ganoderma_sp.glb"
-          poster="ganoderma_sp.glb"
+          src="ganoderma_1.glb"
+          alt="Modelo tridimensional de Ganoderma orbiforme"
           ar
           ar-modes="webxr scene-viewer quick-look"
           camera-controls
+          touch-action="pan-y"
           auto-rotate
+          camera-orbit="0deg 75deg 115%"
           shadow-intensity="1"
-          alt="Modelo tridimensional de Ganoderma orbiforme">
+          loading="eager"
+          reveal="auto">
+          <div slot="progress-bar" class="carregando">
+            <span>CARREGANDO MODELO 3D</span>
+            <div class="carregando-trilho"><div class="carregando-barra"></div></div>
+          </div>
           <button slot="ar-button" class="botao-ar" type="button">Ver em AR</button>
         </model-viewer>
+        <p class="erro-modelo" role="alert" hidden>
+          Não foi possível carregar o modelo 3D. Confira se o arquivo
+          ganoderma_1.glb está na mesma pasta do index.html e se a página
+          foi aberta por um endereço http(s), não direto do arquivo.
+        </p>
       </div>
 
       <p class="dica">Arraste para girar · aproxime para ver os detalhes</p>
@@ -536,16 +604,37 @@
 
     <footer class="rodape">
       FunGO · APRENDA MICOLOGIA EXPLORANDO<br>
-      Modelo tridimensional para fins de divulgação científica.
+      Modelo tridimensional para fins de divulgação científica.<br>
+      Modelo 3D: Vincent Lagardère,
+      <a href="https://sketchfab.com/3d-models/ganoderma-luccinum-real-fungus-3d-scan-d48c3bc2b15146838c2c6b2694efed37" target="_blank" rel="noopener">Sketchfab</a>,
+      CC BY-NC-ND 4.0
     </footer>
 
   </div>
 
   <script>
+    var modelo = document.querySelector('model-viewer');
+    var carregando = modelo.querySelector('.carregando');
+    var barra = modelo.querySelector('.carregando-barra');
+    var erro = document.querySelector('.erro-modelo');
+
     // Respeita quem pede menos movimento: desliga a rotação automática.
     if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      document.querySelector('model-viewer').removeAttribute('auto-rotate');
+      modelo.removeAttribute('auto-rotate');
     }
+
+    // Barra de progresso: o arquivo .glb tem cerca de 24 MB.
+    modelo.addEventListener('progress', function (e) {
+      var p = e.detail.totalProgress;
+      barra.style.width = (p * 100) + '%';
+      if (p >= 1) carregando.classList.add('oculto');
+    });
+
+    // Se o arquivo não for encontrado ou não abrir, mostra o aviso no círculo.
+    modelo.addEventListener('error', function () {
+      carregando.classList.add('oculto');
+      erro.hidden = false;
+    });
   </script>
 </body>
 </html>
